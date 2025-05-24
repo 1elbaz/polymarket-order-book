@@ -1,17 +1,17 @@
 // File: src/__tests__/apiClient.test.ts
 import Decimal from 'decimal.js';
 import { fetchOrderBook } from '@/lib/apiClient';
-import { rest } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 
 const mockData = {
-  bids: [[1.23, 100], [1.22, 50]],
-  asks: [[1.24, 80], [1.25, 40]],
+  bids: [[1.23, 100], [1.22, 50]] as [number, number][],
+  asks: [[1.24, 80], [1.25, 40]] as [number, number][],
 };
 
 const server = setupServer(
-  rest.get('https://api.polymarket.com/book/:marketId', (req, res, ctx) => {
-    return res(ctx.status(200), ctx.json(mockData));
+  http.get('https://api.polymarket.com/book/:marketId', () => {
+    return HttpResponse.json(mockData);
   })
 );
 
@@ -31,9 +31,9 @@ describe('fetchOrderBook', () => {
 
   it('throws on non-2xx responses', async () => {
     server.use(
-      rest.get('https://api.polymarket.com/book/:marketId', (req, res, ctx) =>
-        res(ctx.status(500))
-      )
+      http.get('https://api.polymarket.com/book/:marketId', () => {
+        return new HttpResponse(null, { status: 500 });
+      })
     );
     await expect(fetchOrderBook('bad')).rejects.toThrow('HTTP 500');
   });

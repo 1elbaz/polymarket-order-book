@@ -1,29 +1,43 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
-const mswNode = require.resolve('msw/node');
-
 module.exports = {
-  preset: 'ts-jest/presets/js-with-ts-esm',
+  preset: 'ts-jest',
   testEnvironment: 'jsdom',
+  testEnvironmentOptions: {
+    customExportConditions: ['']
+  },
   roots: ['<rootDir>/src'],
   setupFiles: ['<rootDir>/jest.polyfills.ts'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 
-  // Tell Jest to compile ESM in msw and its interceptors
+  // Transform configuration (updated syntax)
+  transform: {
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      useESM: true,
+      tsconfig: {
+        module: 'esnext'
+      }
+    }]
+  },
+
+  // Tell Jest to compile ESM modules including MSW and its dependencies
   transformIgnorePatterns: [
-    '/node_modules/(?!(msw|@mswjs/interceptors)/)'
+    'node_modules/(?!(msw|@mswjs|@bundled-es-modules)/)'
   ],
-  // Still don’t run tests in node_modules or .next
+  
   testPathIgnorePatterns: [
     '/node_modules/',
     '/.next/'
   ],
    
   moduleNameMapper: {
-    // ← NO leading or trailing slashes around the regex here!
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^msw/node$': '<rootDir>/node_modules/msw/lib/node/index.js',
-    // static‐asset stub
+    // Static asset stub
     '\\.(css|svg)$': '<rootDir>/__mocks__/fileMock.js'
   },
 
+  // Handle ES modules
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
+  
+  // Module file extensions
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node']
 };
