@@ -1,4 +1,4 @@
-// File: src/types/index.ts
+// File: src/types/index.ts - FIXED to only export existing types
 
 // =============================================================================
 // EXPLICIT TYPE EXPORTS (only export what actually exists)
@@ -23,10 +23,10 @@ export type {
   OrderBookErrorType,
   TransformOptions,
   TransformResult,
-  TrendDirection, // Export TrendDirection from orderbook (if it exists there)
+  TrendDirection,
 } from './orderbook';
 
-// API types
+// API types - UPDATED with new corrected types
 export type {
   ApiResponse,
   ApiErrorResponse,
@@ -35,26 +35,35 @@ export type {
   MarketApiResponse,
   MarketsListResponse,
   MarketSearchResponse,
-  OrderBookApiResponse,
+  OrderBookApiResponse,        
   OrderBookDepthResponse,
+  OrderSummary,               
+  TokenInfo,                  
+  RewardsInfo,                
   TradeApiResponse,
   TradeHistoryResponse,
+  MakerOrderInfo,             
   WebSocketMessageType,
   WebSocketMessage,
   WebSocketSubscription,
   WebSocketOrderBookUpdate,
   WebSocketTradeUpdate,
   WebSocketError,
+  WSAuth,                     
+  WSBookMessage,              
+  WSPriceChangeMessage,       
+  WSTradeMessage,             
   MarketStatsResponse,
   ListQueryParams,
   MarketListParams,
   TradeHistoryParams,
   OrderBookDepthParams,
+  BookParams,                 
   RateLimitInfo,
   ApiClientConfig,
 } from './api';
 
-// Market types (only export what actually exists)
+// Market types
 export type {
   Market,
   MarketCreator,
@@ -71,18 +80,10 @@ export type {
   RecentMarketActivity,
 } from './market';
 
-// Add DetailedMarket and other types only if they exist
-// Check your market.ts file and add these if they're actually exported:
-// DetailedMarket,
-// MarketPricing,
-// MarketStats,
-// MarketLiquidity,
-// MarketResolution,
-// MarketTrend,
-// MarketSentiment,
-// MarketComparison,
-
-// State types (only export what actually exists)
+// State types - COMMENTED OUT until properly implemented
+// NOTE: These exports are causing TypeScript errors because the types don't exist
+// or aren't properly exported from ./state. Uncomment when they're implemented.
+/*
 export type {
   AppState,
   MarketState,
@@ -95,7 +96,6 @@ export type {
   AnalyticsState,
   ActionType,
   Action,
-  // State-specific types
   StateDecimal,
   ThemeMode,
   FontSize,
@@ -110,6 +110,7 @@ export type {
   TradeSideFilter,
   ConnectionHealth,
 } from './state';
+*/
 
 // =============================================================================
 // VALIDATION SCHEMAS (only export what exists)
@@ -136,10 +137,13 @@ export {
   MarketFiltersSchema,
 } from './market';
 
+// State schemas - COMMENTED OUT until properly implemented
+/*
 export {
   UIThemeSchema,
   ConnectionStatusSchema,
 } from './state';
+*/
 
 // =============================================================================
 // TYPE GUARDS (only export what exists)
@@ -171,11 +175,14 @@ export {
   isBinaryMarket,
 } from './market';
 
+// State type guards - COMMENTED OUT until properly implemented
+/*
 export {
   isValidAction,
   isValidUITheme,
   isValidConnectionStatus,
 } from './state';
+*/
 
 // =============================================================================
 // UTILITY FUNCTIONS (only export what exists)
@@ -189,7 +196,10 @@ export {
   getMarketSlug,
 } from './market';
 
+// State utilities - COMMENTED OUT until properly implemented
+/*
 export {
   createInitialAppState,
   mergeState,
 } from './state';
+*/

@@ -1,46 +1,67 @@
-// File: src/lib/api/endpoints.ts
+// File: src/lib/endpoints.ts - CORRECTED based on actual Polymarket API docs
 
 /**
- * API endpoint configuration
+ * API endpoint configuration - UPDATED to match actual Polymarket API
  */
 export const ENDPOINTS = {
+    // Authentication endpoints
+    CREATE_API_KEY: '/auth/api-key',
+    DERIVE_API_KEY: '/auth/derive-api-key', 
+    GET_API_KEYS: '/auth/api-keys',
+    DELETE_API_KEY: '/auth/api-key',
+    BAN_STATUS: '/auth/ban-status/cert-required',
+    CLOSED_ONLY_MODE: '/auth/ban-status/closed-only',
+    
+    // Order endpoints
+    CREATE_ORDER: '/order',
+    GET_ORDER: (orderId: string) => `/data/order/${orderId}`,
+    GET_ORDERS: '/data/orders',
+    CANCEL_ORDER: '/order',
+    CANCEL_ORDERS: '/orders', 
+    CANCEL_ALL_ORDERS: '/cancel-all',
+    CANCEL_MARKET_ORDERS: '/cancel-market-orders',
+    ORDER_SCORING: '/order-scoring',
+    ORDERS_SCORING: '/orders-scoring',
+    
+    // Trade endpoints  
+    GET_TRADES: '/data/trades',
+    
     // Market endpoints
-    MARKETS: '/markets',
-    MARKET_DETAIL: (marketId: string) => `/markets/${marketId}`,
-    MARKET_SEARCH: '/markets/search',
+    GET_MARKETS: '/markets',
+    GET_SAMPLING_MARKETS: '/sampling-markets',
+    GET_SIMPLIFIED_MARKETS: '/simplified-markets', 
+    GET_SAMPLING_SIMPLIFIED_MARKETS: '/sampling-simplified-markets',
+    GET_MARKET: (conditionId: string) => `/markets/${conditionId}`,
     
-    // Order book endpoints
-    ORDER_BOOK: (marketId: string) => `/book/${marketId}`,
-    ORDER_BOOK_DEPTH: (marketId: string, depth: number) => `/book/${marketId}?depth=${depth}`,
+    // Price and book endpoints
+    GET_BOOK: '/book', // ?token_id={token_id}
+    GET_BOOKS: '/books',
+    GET_PRICE: '/price', // ?token_id={token_id}&side={side}
+    GET_PRICES: '/prices',
+    GET_MIDPOINT: '/midpoint', // ?token_id={token_id}
+    GET_MIDPOINTS: '/midpoints',
+    GET_SPREAD: '/spread', // ?token_id={token_id}
+    GET_SPREADS: '/spreads',
     
-    // Trade endpoints
-    TRADES: (marketId: string) => `/trades/${marketId}`,
-    TRADE_HISTORY: (marketId: string) => `/trades/${marketId}/history`,
-    
-    // Market statistics
-    MARKET_STATS: (marketId: string) => `/markets/${marketId}/stats`,
-    MARKET_CANDLES: (marketId: string) => `/markets/${marketId}/candles`,
-    
-    // System endpoints
-    PING: '/ping',
-    STATUS: '/status',
+    // Timeseries
+    PRICES_HISTORY: '/prices-history',
   } as const;
   
   /**
-   * WebSocket endpoint configuration
+   * WebSocket endpoint configuration - CORRECTED
    */
   export const WS_ENDPOINTS = {
-    BASE_URL: 'wss://ws-subscriptions-clob.polymarket.com',
-    ORDER_BOOK: (marketId: string) => `/book/${marketId}`,
-    TRADES: (marketId: string) => `/trades/${marketId}`,
-    ALL_MARKETS: '/markets',
+    BASE_URL: 'wss://ws-subscriptions-clob.polymarket.com/ws/',
+    
+    // WebSocket channels
+    USER_CHANNEL: 'user',
+    MARKET_CHANNEL: 'market', 
   } as const;
   
   /**
-   * API version configuration
+   * API configuration - CORRECTED
    */
   export const API_CONFIG = {
-    VERSION: 'v1',
     BASE_URL: 'https://clob.polymarket.com',
     WS_BASE_URL: WS_ENDPOINTS.BASE_URL,
     TIMEOUT: 10000,
@@ -56,8 +77,8 @@ export const ENDPOINTS = {
   }
   
   /**
-   * Build WebSocket URL
+   * Build WebSocket URL  
    */
-  export function buildWsUrl(endpoint: string): string {
-    return `${WS_ENDPOINTS.BASE_URL}${endpoint}`;
+  export function buildWsUrl(): string {
+    return WS_ENDPOINTS.BASE_URL;
   }

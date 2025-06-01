@@ -1,15 +1,14 @@
+// File: src/contexts/OrderBookContext.tsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import type { ReactNode } from 'react';
 import type { OrderBook } from '@/types/orderbook';
+import type { ConnectionStatus } from '@/types/orderbook'; // Use the simple type
 import { fetchOrderBook, OrderBookSocket } from '@/lib/apiClient';
 
-// Connection status states
-export type ConnectionStatus = 'idle' | 'connecting' | 'open' | 'error' | 'closed';
-
-// Context value shape
+// Context value shape - simplified to use ConnectionStatus instead of ConnectionState
 export interface OrderBookContextProps {
   book: OrderBook | null;
-  status: ConnectionStatus;
+  status: ConnectionStatus; // Changed from ConnectionState to ConnectionStatus
   precision: number;
   rowCount: number;
   setPrecision: (precision: number) => void;
@@ -43,33 +42,48 @@ export const OrderBookProvider: React.FC<OrderBookProviderProps> = ({ marketId, 
 
   useEffect(() => {
     let mounted = true;
-    setStatus('connecting');
+    let socket: OrderBookSocket | null = null;
 
-    // Fetch initial snapshot
-    fetchOrderBook(marketId)
-      .then(initialBook => {
+    const initializeOrderBook = async () => {
+      setStatus('connecting');
+
+      try {
+        // Fetch initial snapshot
+        const initialBook = await fetchOrderBook(marketId);
+        
         if (!mounted) return;
+        
         setBook(initialBook);
-        setStatus('open');
+        setStatus('connected');
 
         // Subscribe to live updates
-        const socket = new OrderBookSocket(marketId, updatedBook => {
-          if (!mounted) return;
-          setBook(updatedBook);
-        });
+        socket = new OrderBookSocket(
+          marketId, 
+          (updatedBook: OrderBook) => {
+            if (!mounted) return;
+            setBook(updatedBook);
+          },
+          (newStatus: ConnectionStatus) => {
+            if (!mounted) return;
+            setStatus(newStatus);
+          }
+        );
 
-        return () => {
-          mounted = false;
-          socket.close();
-        };
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('OrderBook fetch error:', error);
-        if (mounted) setStatus('error');
-      });
+        if (mounted) {
+          setStatus('error');
+        }
+      }
+    };
+
+    initializeOrderBook();
 
     return () => {
       mounted = false;
+      if (socket) {
+        socket.close();
+      }
     };
   }, [marketId]);
 

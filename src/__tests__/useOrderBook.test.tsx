@@ -1,25 +1,63 @@
-// File: src/__tests__/useOrderBook.test.tsx
+// File: src/__tests__/useOrderBook.test.tsx - FIXED ESLint errors
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
-import { rest } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import type { OrderBookResponse } from '@/types/orderbook';
+import type { OrderBookApiResponse } from '@/types';
 import { OrderBookProvider, useOrderBook } from '@/contexts/OrderBookContext';
 
+// FIXED: Add proper typing for mock WebSocket
+interface MockWebSocket {
+  listeners: Record<string, (event: unknown) => void>;
+  addEventListener(type: string, listener: (event: unknown) => void): void;
+  removeEventListener(type: string): void;
+  close(): void;
+}
+
+// FIXED: Move MockWebSocket class to module level
+class MockWebSocketImpl implements MockWebSocket {
+  listeners: Record<string, (event: unknown) => void> = {};
+  
+  constructor() {
+    setTimeout(() => this.listeners.open?.({ type: 'open' }), 0);
+  }
+  
+  addEventListener(type: string, listener: (event: unknown) => void) {
+    this.listeners[type] = listener;
+  }
+  
+  removeEventListener(type: string) {
+    delete this.listeners[type];
+  }
+  
+  close() {
+    // Mock close implementation
+  }
+}
+
 // Mock initial and updated data
-const initialData: OrderBookResponse = {
-  bids: [[1.23, 100], [1.22, 50]],
-  asks: [[1.24, 80], [1.25, 40]],
+const initialData: OrderBookApiResponse = {
+  market: 'test-market',
+  asset_id: 'test-asset',
+  hash: '0x123',
+  timestamp: '1672290701000',
+  bids: [{ price: '1.23', size: '100' }, { price: '1.22', size: '50' }],
+  asks: [{ price: '1.24', size: '80' }, { price: '1.25', size: '40' }],
 };
-const updatedData: OrderBookResponse = {
-  bids: [[2.34, 200], [2.33, 150]],
-  asks: [[2.35, 180], [2.36, 140]],
+
+const updatedData: OrderBookApiResponse = {
+  market: 'test-market',
+  asset_id: 'test-asset',
+  hash: '0x456',
+  timestamp: '1672290702000',
+  bids: [{ price: '2.34', size: '200' }, { price: '2.33', size: '150' }],
+  asks: [{ price: '2.35', size: '180' }, { price: '2.36', size: '140' }],
 };
 
 // MSW server for REST endpoint
 const server = setupServer(
-  rest.get('https://api.polymarket.com/book/:marketId', (req, res, ctx) => {
-    return res(ctx.status(200), ctx.json(initialData));
+  http.get('https://clob.polymarket.com/book', () => {
+    return HttpResponse.json(initialData);
   })
 );
 
@@ -29,23 +67,9 @@ afterAll(() => server.close());
 
 // Polyfill WebSocket
 beforeEach(() => {
-  // @ts-ignore
-  global.WebSocket = class {
-    listeners: Record<string, (event: any) => void> = {};
-    constructor() {
-      setTimeout(() => this.listeners.open?.({ type: 'open' }), 0);
-    }
-    addEventListener(type: string, listener: (event: any) => void) {
-      this.listeners[type] = listener;
-    }
-    removeEventListener(type: string) {
-      delete this.listeners[type];
-    }
-    close() {}
-  };
+  // @ts-expect-error - Mocking WebSocket for testing
+  global.WebSocket = MockWebSocketImpl;
 });
-
-type Status = 'idle' | 'connecting' | 'open' | 'error';
 
 // Test component that displays status and top bid
 const TestComponent: React.FC = () => {
@@ -70,13 +94,24 @@ describe('useOrderBook integration', () => {
     expect(screen.getByTestId('status')).toHaveTextContent('connecting');
 
     // Wait for initial fetch
-    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('open'));
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('connected'));
     expect(screen.getByTestId('bid')).toHaveTextContent('1.23');
 
-    // Simulate WS message
+    // Simulate WS message - FIXED: Simplified approach
     act(() => {
-      // @ts-ignore
-      global.WebSocket.prototype.listeners.message({ data: JSON.stringify(updatedData) });
+      // Create a mock instance and trigger the message
+      const mockInstance = new MockWebSocketImpl();
+      mockInstance.listeners.message?.({ 
+        data: JSON.stringify({
+          event_type: 'book',
+          asset_id: 'test-asset',
+          market: 'test-market',
+          hash: '0x456',
+          timestamp: '1672290702000',
+          buys: updatedData.bids,
+          sells: updatedData.asks,
+        })
+      });
     });
 
     // Wait for update
@@ -85,7 +120,9 @@ describe('useOrderBook integration', () => {
 
   it('sets status to error on fetch failure', async () => {
     server.use(
-      rest.get('https://api.polymarket.com/book/:marketId', (req, res, ctx) => res(ctx.status(500)))
+      http.get('https://clob.polymarket.com/book', () => {
+        return new HttpResponse(null, { status: 500 });
+      })
     );
 
     render(

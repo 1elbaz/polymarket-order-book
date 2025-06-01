@@ -1,8 +1,8 @@
-// File: src/lib/api/client.ts
-import axios, * as Axios from 'axios';
+// File: src/lib/apiClient.ts
+import axios, { AxiosInstance, AxiosResponse, AxiosRequestConfig, AxiosError } from 'axios';
 import axiosRetry from 'axios-retry';
 import { z } from 'zod';
-import { ApiError, handleApiError, createApiError } from '@/lib/errors';
+import { ApiError, handleApiError, createApiError, isAxiosError } from '@/lib/errors';
 import type { RateLimitInfo } from '@/types/api';
 
 /**
@@ -22,18 +22,6 @@ export interface ApiClientConfig {
   /** Enable request/response logging */
   debug?: boolean;
 }
-
-// Re-export the new API client for backward compatibility
-export { 
-  polymarketClient as default,
-  fetchOrderBook,
-  fetchMarket,
-  PolymarketClient 
-} from './polymarket'; // Adjusted the path to point to the correct module
-
-
-// Re-export the WebSocket class (we'll enhance this next)
-export { OrderBookSocket } from './websocket'; // Adjusted the path to point to the correct module
 
 /**
  * Default configuration for the API client
@@ -159,11 +147,11 @@ export class ApiClient {
   /**
    * Generic GET request with validation
    */
-  public async get<T>(url: string, schema?: z.ZodType<T>, config?: Axios.AxiosRequestConfig): Promise<T> {
+  public async get<T>(url: string, schema?: z.ZodType<T>, config?: AxiosRequestConfig): Promise<T> {
     try {
       const response = await this.client.get(url, config);
       return this.validateAndTransform(response.data, schema);
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw this.enhanceError(error, 'GET', url);
     }
   }
@@ -175,12 +163,12 @@ export class ApiClient {
     url: string, 
     data?: unknown, 
     schema?: z.ZodType<T>, 
-    config?: Axios.AxiosRequestConfig
+    config?: AxiosRequestConfig
   ): Promise<T> {
     try {
       const response = await this.client.post(url, data, config);
       return this.validateAndTransform(response.data, schema);
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw this.enhanceError(error, 'POST', url);
     }
   }
@@ -192,12 +180,12 @@ export class ApiClient {
     url: string, 
     data?: unknown, 
     schema?: z.ZodType<T>, 
-    config?: Axios.AxiosRequestConfig
+    config?: AxiosRequestConfig
   ): Promise<T> {
     try {
       const response = await this.client.put(url, data, config);
       return this.validateAndTransform(response.data, schema);
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw this.enhanceError(error, 'PUT', url);
     }
   }
@@ -205,11 +193,11 @@ export class ApiClient {
   /**
    * Generic DELETE request with validation
    */
-  public async delete<T>(url: string, schema?: z.ZodType<T>, config?: Axios.AxiosRequestConfig): Promise<T> {
+  public async delete<T>(url: string, schema?: z.ZodType<T>, config?: AxiosRequestConfig): Promise<T> {
     try {
       const response = await this.client.delete(url, config);
       return this.validateAndTransform(response.data, schema);
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw this.enhanceError(error, 'DELETE', url);
     }
   }
@@ -245,7 +233,7 @@ export class ApiClient {
       return error;
     }
 
-    if (Axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       return handleApiError(error);
     }
 
@@ -283,3 +271,7 @@ export class ApiClient {
 
 // Create and export a default client instance
 export const apiClient = new ApiClient();
+
+// Re-export the specific client implementations
+export { polymarketClient as default, fetchOrderBook, fetchMarket, PolymarketClient } from './polymarket';
+export { OrderBookSocket } from './websocket';
